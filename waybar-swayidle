@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Copyright 2024 Raffaele Mancuso
+# SPDX-License-Identifier: MIT
+
+# Requires swayidle
+
+SIGNAL=6
+pidf="/tmp/waybar-swayidle"
+
+if [ "$1" == "status" ]; then
+	# -s FILE -> file exists and has a size greater than 0
+	if [ -s "$pidf" ]; then
+		awk 'BEGIN{printf "{\"text\":\"󰒲\", \"tooltip\":\"Running\\n"}
+		NR==1{printf "PID: %s\"}", $0}' "$pidf"
+	else
+		printf '{"text":"󰒳", "tooltip":"Stopped"}\n'
+	fi
+
+elif [ "$1" == "toggle" ]; then
+	if [ -s "$pidf" ]; then
+		pid=$(awk 'NR==1' "$pidf")
+		kill "$pid"
+		printf "" >"$pidf"
+	else
+		# Lock screen after a certain time of inactivity
+		# unit of measure is seconds
+		swayidle -w timeout 600 "swaylock -f -c 000000" timeout 900 "hyprctl dispatch dpms off" resume "hyprctl dispatch dpms on" before-sleep "swaylock -f -c 000000" 1>/dev/null 2>&1 &
+		printf "%d" "$!" >"$pidf"
+		disown "$pid"
+	fi
+	pkill -RTMIN+$SIGNAL waybar
+
+else
+	printf "ERROR: Argument %s not valid\n" "$1"
+fi

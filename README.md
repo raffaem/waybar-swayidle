@@ -26,3 +26,10 @@ Put the following in `$HOME/.config/waybar/config`:
 },
 ```
 
+Start a swayidle instance at start-up time.
+
+For example, if you use hyprland, you can put the following in your `$HOME/.config/hypr/hyprland.conf`:
+
+```
+exec-once = /home/USERNAME/.config/waybar/waybar-swayidle/waybar-swayidle on
+```

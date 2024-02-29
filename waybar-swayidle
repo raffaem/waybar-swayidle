@@ -9,28 +9,46 @@ SIGNAL=6
 pidf="/tmp/waybar-swayidle"
 
 if [ "$1" == "status" ]; then
-	# -s FILE -> file exists and has a size greater than 0
-	if [ -s "$pidf" ]; then
-		awk 'BEGIN{printf "{\"text\":\"󰒲\", \"tooltip\":\"Running\\n"}
-		NR==1{printf "PID: %s\"}", $0}' "$pidf"
-	else
-		printf '{"text":"󰒳", "tooltip":"Stopped"}\n'
-	fi
+  # -s FILE -> file exists and has a size greater than 0
+  if [ -s "$pidf" ]; then
+    awk 'BEGIN{printf "{\"text\":\"󰒲\", \"tooltip\":\"Running\\n"} NR==1{printf "PID: %s\"}", $0}' "$pidf"
+  else
+    printf '{"text":"󰒳", "tooltip":"Stopped"}\n'
+  fi
 
 elif [ "$1" == "toggle" ]; then
-	if [ -s "$pidf" ]; then
-		pid=$(awk 'NR==1' "$pidf")
-		kill "$pid"
-		printf "" >"$pidf"
-	else
-		# Lock screen after a certain time of inactivity
-		# unit of measure is seconds
-		swayidle -w timeout 600 "swaylock -f -c 000000" timeout 900 "hyprctl dispatch dpms off" resume "hyprctl dispatch dpms on" before-sleep "swaylock -f -c 000000" 1>/dev/null 2>&1 &
-		printf "%d" "$!" >"$pidf"
-		disown "$pid"
-	fi
-	pkill -RTMIN+$SIGNAL waybar
+  if [ -s "$pidf" ]; then
+    "$0" off
+  else
+    "$0" on
+  fi
 
+elif [ "$1" == "on" ]; then
+  if [ -s "$pidf" ]; then
+    exit 1
+  fi
+  # Lock screen after a certain time of inactivity
+  # unit of measure is seconds
+  swayidle -w\
+    timeout 600 "swaylock -f -c 000000"\
+    timeout 900 "hyprctl dispatch dpms off"\
+    resume "hyprctl dispatch dpms on"\
+    before-sleep "swaylock -f -c 000000"\
+    1>/dev/null 2>&1 &
+  printf "%d" "$!" >"$pidf"
+  pkill -RTMIN+$SIGNAL waybar
+
+elif [ "$1" == "off" ]; then
+  if [ ! -s "$pidf" ]; then
+    exit 1
+  fi
+  pid=$(awk 'NR==1' "$pidf")
+  if [ -z "$pid" ]; then
+    exit 2
+  fi
+  kill "$pid"
+  printf "" >"$pidf"
+  pkill -RTMIN+$SIGNAL waybar
 else
-	printf "ERROR: Argument %s not valid\n" "$1"
+  printf "ERROR: Argument %s not valid\n" "$1"
 fi

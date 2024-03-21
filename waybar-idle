@@ -27,14 +27,15 @@ elif [ "$1" == "on" ]; then
   if [ -s "$pidf" ]; then
     exit 1
   fi
-  # Lock screen after a certain time of inactivity
-  # unit of measure is seconds
-  swayidle -w\
-    timeout 600 "swaylock -f -c 000000"\
-    timeout 900 "hyprctl dispatch dpms off"\
-    resume "hyprctl dispatch dpms on"\
-    before-sleep "swaylock -f -c 000000"\
-    1>/dev/null 2>&1 &
+  # For swayidle
+  # swayidle -w\
+  #   timeout 600 "swaylock -f -c 000000"\
+  #   timeout 900 "hyprctl dispatch dpms off"\
+  #   resume "hyprctl dispatch dpms on"\
+  #   before-sleep "swaylock -f -c 000000"\
+  #   1>/dev/null 2>&1 &
+  # For hypridle
+  hypridle 1>/dev/null 2>&1 &
   printf "%d" "$!" >"$pidf"
   pkill -RTMIN+$SIGNAL waybar
 

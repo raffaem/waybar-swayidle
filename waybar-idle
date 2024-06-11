@@ -3,15 +3,18 @@
 # Copyright 2024 Raffaele Mancuso
 # SPDX-License-Identifier: MIT
 
-# Requires swayidle
+# Requires hypridle
 
 SIGNAL=6
-pidf="/tmp/waybar-swayidle"
+pidf="/tmp/waybar-idle"
+procname=hypridle
 
 if [ "$1" == "status" ]; then
   # -s FILE -> file exists and has a size greater than 0
   if [ -s "$pidf" ]; then
-    awk 'BEGIN{printf "{\"text\":\"󰒲\", \"tooltip\":\"Running\\n"} NR==1{printf "PID: %s\"}", $0}' "$pidf"
+    printf '{\"text\":\"󰒲\", \"tooltip\":\"Running\\nName: %s\\nPID: ' "$procname"
+    awk 'NR==1{printf $0}' "$pidf"
+    printf '\"}\n'
   else
     printf '{"text":"󰒳", "tooltip":"Stopped"}\n'
   fi
@@ -27,17 +30,23 @@ elif [ "$1" == "on" ]; then
   if [ -s "$pidf" ]; then
     exit 1
   fi
+
   # For swayidle
-  # swayidle -w\
-  #   timeout 600 "swaylock -f -c 000000"\
-  #   timeout 900 "hyprctl dispatch dpms off"\
-  #   resume "hyprctl dispatch dpms on"\
-  #   before-sleep "swaylock -f -c 000000"\
-  #   1>/dev/null 2>&1 &
-  # For hypridle
-  hypridle 1>/dev/null 2>&1 &
-  printf "%d" "$!" >"$pidf"
-  pkill -RTMIN+$SIGNAL waybar
+  if [ "${procname}" = "swayidle" ]; then
+    swayidle -w\
+      timeout 600 "swaylock -f -c 000000"\
+      timeout 900 "hyprctl dispatch dpms off"\
+      resume "hyprctl dispatch dpms on"\
+      before-sleep "swaylock -f -c 000000"\
+      1>/dev/null 2>&1 &
+  elif [ "${procname}" = "hypridle" ]; then
+    # For hypridle
+    hypridle 1>/dev/null 2>&1 &
+    printf "%d" "$!" >"$pidf"
+    pkill -RTMIN+$SIGNAL waybar
+  else
+    printf "ERROR: procname %s not implemented" "${procname}"
+  fi
 
 elif [ "$1" == "off" ]; then
   if [ ! -s "$pidf" ]; then
